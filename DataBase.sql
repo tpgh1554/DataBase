@@ -328,3 +328,236 @@ where months_between(sysdate, hiredate) / 12 >= 38;
 
 -- **오늘 날짜에서 년도만 추출**
 select extract(year from sysdate) from dual;
+
+
+
+
+-- 다중행 함수 : 여러 행에 대해 함수가 적용되어 하나의 결과를 나타내는 함수(집계 함수)
+select sum(sal)
+from emp;
+-- GROUP BY : 그룹화
+select deptno, sum(sal) -- 3. 부서와 부서의 급여합계를 출력
+from emp  -- 1. 먼저 사원 테이블을 가져옴
+group by deptno; -- 2. 사원 테이블을 부서 단위로 묶음
+
+-- 모든 사원의 급여와 수당의 합계 구하기
+select sum(sal), sum(comm)
+from emp;
+
+-- 테이블의 데이터 갯수 출력
+select count(*)
+from emp;
+
+-- 30번 부서의 사원 수 출력
+select count(*)
+from emp
+where deptno = 30;
+
+select count(comm)
+from emp
+where comm is not null;
+
+-- 10번 부서의 사원 중 최대 급여 출력하기
+select max(sal)
+from emp
+where deptno = 10;
+
+-- 30번 부서의 평균 급여 출력하기
+select avg(sal)
+from emp
+where deptno = 30;
+
+-- 부서별 평균 급여 출력하기
+select avg(sal), deptno
+from emp
+group by deptno;
+
+select avg(sal)
+from emp
+where deptno = 10;
+
+-- 집합을 사용해서 출력하기
+select avg(sal) from emp where deptno = 10
+union all
+select avg(sal) from emp where deptno = 20
+union all
+select avg(sal) from emp where deptno = 30;
+
+-- 부서 번호 및 직책별 평균 급여 정렬하기
+select deptno, job, avg(sal)
+from emp
+group by deptno, job
+order by deptno, job;
+
+-- 부서코드, 급여합계, 부서평균, 부서코드 순 정렬로 출력하기
+select deptno as "부서코드",
+    sum(sal) as "급여합계",
+    round(avg(sal)) as "급여평균",
+    count(*) as "인원수"
+from emp
+group by deptno
+order by deptno;
+
+
+-- HAVING절 : GROUP BY 절이 존재 할 때만 사용
+-- GROUP BY절을 통해 그룹화 된 결과 값의 범위를 제한하는데 사용
+select deptno, job, avg(sal)
+from emp
+group by deptno, job
+    having avg(sal) >= 2000
+order by deptno, job;
+
+
+-- 1. HAVING절을 사용하여 부서별 직책의 평균 급여가 500 이상인 사원들의
+-- 부서번호, 직책, 부서별 직책의 평균 급여 출력
+select deptno, job, avg(sal)
+from emp
+group by deptno, job
+    having avg(sal) >= 500
+order by deptno, job;
+
+
+-- 2. 부서번호, 평균급여, 최고급여, 최저급여, 사원수 출력
+-- 단, 평균 급여는 소수점 제외하고 부서 번호별 출력
+select deptno, round(avg(sal)), max(sal), min(sal), count(*)
+from emp
+group by deptno
+order by deptno;
+
+
+-- 3. 같은 직책에 종사하는 사원이 3명 이상인 직책과 인원을 출력
+select job, count(*)
+from emp
+group by job
+    having count(*) >= 3;
+
+
+-- 4. 사원들의 입사 연도를 기준으로 부서별로 몇 명이 입사했는지 출력(to_char(hiredate, 'yyyy') 사용 가능)
+select extract(year from hiredate), deptno, count(*) from emp
+group by extract(year from hiredate), deptno
+order by extract(year from hiredate);
+
+
+-- 5. 추가 수당을 받는 사원과 받지 않는 사원수 출력
+-- 추가 수당 여부는 O, X로 표기
+select NVL2(comm, 'O', 'X'), count(*) from emp
+group by NVL2(comm, 'O', 'X');
+
+
+
+-- 6. 각 부서의 입사 연도별 사원수, 최고급여, 급여합, 평균 급여를 출력
+select extract(year from hiredate), deptno, count(*), max(sal), sum(sal), round(avg(sal)) from emp
+group by extract(year from hiredate), deptno
+order by extract(year from hiredate), deptno;
+
+
+
+-- ROLLUP 함수 : 
+select deptno, job, count(*), max(sal), sum(sal), avg(sal)
+from emp
+group by rollup(deptno, job);
+
+
+-- 집합연산자 : 두 개 이상의 쿼리 결과를 하나로 결합하는 연산자(수직적 처리)
+select empno, ename, job
+from emp
+where job = 'SALESMAN'
+union
+select empno, ename, job
+from emp
+where job = 'MANAGER';
+
+
+-- 조인(JOIN) : 두 개 이상의 테이블에서 데이터를 가져와서 연결하는데 사용되는 SQL기능
+-- 테이블에 대한 식별 값인 PRIMARY KEY와 테이블 간의 공통 값인 FOREIGN KEY 값을 사용하여 조인
+-- 내부 조인(동등 조인, inner join)이며 오라클 방식, 양쪽에 동일한 컬럼이 있는 경우(테이블 이름을 표시해야 함)
+
+select empno, ename, mgr, sal, e.deptno
+from emp e, dept d
+where e.deptno = d.deptno
+and sal >= 3000;
+
+-- ANSI 방식
+select empno, ename, mgr, sal, e.deptno
+from emp e join dept d
+on e.deptno = d.deptno
+where sal >= 3000;
+
+-- EMP 테이블 별칭을 E로, DEPT 테이블 별칭은 D로 하여 다음과 같이 등가 조인을 했을 때 
+-- 급여가 2500 이하이고 사원 번호가 9999 이하인 사원의 정보가 출력되도록 작성
+select e.empno, e.ename, d.deptno, d.dname, d.loc
+from emp e join dept d
+on e.deptno = d.deptno
+where sal >= 2500 and empno <= 9999
+order by empno;
+
+-- 비등가 조인 : 동일한 컬럼이 없을 때 사용하는 조인(일반적으로 많이 사용되지는 않음)
+select * from emp;
+select * from salgrade;
+select e.ename, e.sal, s.grade
+from emp e join salgrade s
+on e.sal between s.losal and s.hisal;
+
+
+-- 자체 조인 : 현재 테이블 조인해서 뭔가 결과를 찾아 낼 때 사용
+select e1.empno, e1.ename, e1.mgr,
+    e2.empno as "상관 사원번호",
+    e2.ename as "상관 이름"
+from emp e1 join emp e2
+on e1.mgr = e2.empno;
+
+-- 외부 조인(Left outer join) : 부족한 부분이 있는 행의 테이블에 (+)
+select e.ename, e.deptno, d.dname
+from emp e, dept d
+where e.deptno = d.deptno(+)
+order by e.deptno;
+
+select e.ename, e.deptno, d.dname
+from emp e right outer join dept d
+on e.deptno = d.deptno
+order by e.deptno;
+
+
+-- NATURAL JOIN : 동등조인을 사용하는 다른 방법, 조건절 없이 사용, 두 테이블의 같은 열을 자동으로 연결
+select e.empno, e.ename, d.dname, deptno
+from emp e natural join dept d;
+
+-- JOIN ~ USING : 동등조인(등가조인)을 대신하는 방식 중의 하나
+select e.empno, e.ename, d.dname, deptno, e.sal
+from emp e join dept d using(deptno)
+where sal >= 3000
+order by deptno, e.empno;
+
+
+-- 연습문제 1 : 급여가 2000초과인 사원들의 부서 정보, 사원 정보 출력
+select deptno, dname, empno, ename, sal
+from emp natural join dept
+where sal > 2000;
+-- 연습문제 2 : 부서별 평균, 최대 급여, 최소 급여, 사원 수 출력(ANSI JOIN)
+select d.deptno, dname, round(avg(sal)) as "평균 급여",
+    MAX(sal) as "최대 급여",
+    min(sal) as "최소 급여",
+    count(*) as "사원 수"
+from emp e join dept d
+on e.deptno = d.deptno
+group by d.deptno, dname;
+
+-- 연습문제 3 : 모든 부서 정보와 사원 정보를 부서 번호, 사원 이름순으로 정렬해서 출력
+select d.deptno, d.dname, e.empno, e.ename, e.job, e.sal
+from emp e right outer join dept d
+on e.deptno = d.deptno
+order by d.deptno, d.dname;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
