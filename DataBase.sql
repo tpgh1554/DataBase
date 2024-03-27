@@ -586,3 +586,13 @@ where comm is not null;
 -- 12.
 select * from emp
 where ename like 'J%S';
+-- 13.
+select * from emp
+where sal >= 1500 and
+    deptno = 30 and
+    job = 'MANAGER';
+-- 14.
+select ename, sal, nvl(comm,0), sal+nvl(comm,0) from emp
+order by sal+nvl(comm,0) desc;
+    
+    
