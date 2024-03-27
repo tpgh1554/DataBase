@@ -549,15 +549,40 @@ on e.deptno = d.deptno
 order by d.deptno, d.dname;
 
 
-
-
-
-
-
-
-
-
-
-
-
-
+-- scott 계정 연습문제(2)
+-- 1.
+select ename, hiredate, deptno from emp
+where ename = 'ALLEN';
+-- 2.
+select * from emp
+where ename = 'ALLEN';
+-- 3. 
+select * from emp
+where ename > 'K';
+-- 4.
+select ename, sal, deptno, hiredate from emp
+where hiredate > '81/04/02' and hiredate < '82/12/09';
+-- 5.
+select ename, job, sal from emp
+where sal > 1600 and sal < 3000;
+-- 6.
+select * from emp
+where extract(year from hiredate) != 1981;
+-- 7.
+select * from emp
+where job = 'MANAGER' or job = 'SALESMAN';
+-- 8.
+select ename, empno, deptno from emp
+where deptno not in (20, 30);
+-- 9.
+select empno, ename, deptno from emp
+where ename like 'S%';
+-- 10.
+select * from emp
+where ename like '_A%';
+-- 11.
+select * from emp
+where comm is not null;
+-- 12.
+select * from emp
+where ename like 'J%S';
