@@ -596,3 +596,211 @@ select ename, sal, nvl(comm,0), sal+nvl(comm,0) from emp
 order by sal+nvl(comm,0) desc;
     
     
+
+-- 서브쿼리 : 쿼리문 내에 포함되는 쿼리문을 의미, 일반적으로 SELECT문의 WHERE 절에서 사용
+-- 단일행 서브쿼리와 다중행 서브쿼리가 있음
+select dname from dept
+where deptno = (select deptno 
+                from emp
+                where ename = 'KING');
+
+
+select * from emp
+where sal > (select sal from emp where ename = 'JONES');
+
+-- 서브쿼리를 사용하여 EMP 테이블의 사원 정보 중에서 사원 이름이 ALLEN인 사원의 추가 수당
+-- 보다 많은 추가 수당을 받는 사원 정보를 구하도록 코드 작성
+SELECT * FROM EMP
+WHERE COMM > (SELECT COMM FROM EMP WHERE ENAME = 'ALLEN');
+
+
+select * from emp
+where hiredate < (select hiredate from emp where ename = 'JAMES');
+
+
+select e.empno, e.ename, e.job, e.sal, d.deptno, d.dname, d.loc
+from emp e join dept d
+on e.deptno = d.deptno
+where e.deptno = 20
+and e.sal > (select avg(sal) from emp);
+    
+
+-- 실행 결과가 여러개인 다중행 서브쿼리
+-- IN : 메인쿼리의 데이터가 서브쿼리의 결과 중 하나라도 일치한 데이터가 있으면 true
+-- ANY, SOME : 메인 쿼리의 조건식을 만족하는 서브쿼리의 결과가 하나 이상이면 true
+-- ALL : 메인 쿼리의 조건식을 서브퀄의 결과 모두가 만족하면 true
+-- EXISTS : 서브 쿼리의 결과가 존재하면 true
+select * from emp
+where sal in(select max(sal) from emp group by deptno)
+order by deptno;
+
+select empno, ename, sal
+from emp
+where sal > any(select sal from emp where job = 'SALESMAN');
+
+select empno, ename, sal, job
+from emp
+where sal = any(select sal from emp where job = 'SALESMAN');
+
+-- ALL : 다중행으로 반환되는 서브쿼리의 결과를 모두 만족해야 true
+select * from emp
+where sal < all(select sal from emp where deptno = 30);
+
+select empno, ename, sal from emp
+where sal > all(select sal from emp where job = 'MANAGER');
+
+select * from emp
+where exists (select dname from dept where deptno = 10);
+
+-- 다중열 서브쿼리 : 서브쿼리의 결과가 두 개 이상의 컬럼으로 반환되어 메인 쿼리에 전달
+select empno, ename, sal, deptno
+from emp
+where (deptno, sal) in (select deptno, sal from emp
+                        where deptno = 30);
+
+select * from emp
+where (deptno, sal) in (select deptno, max(sal)
+                        from emp
+                        group by deptno);
+                        
+-- FROM 절에서 사용하는 서브쿼리 : 인라인뷰라고 부름
+-- 테이블 내에 데이터 규모가 너무 크거나 특정 열만 제공해야 하는 경우 사용
+select e10.empno, e10.ename, e10.deptno, d.dname, d.loc
+from (select empno, ename, deptno from emp where deptno = 10) e10 join dept d
+on e10.deptno = d.deptno;
+
+-- select절에 사용하는 서브쿼리 : 스칼라 서브쿼리라고 부름
+-- select절에 사용되는 서브쿼리는 반드시 하나의 결과만 반환되어야 함
+select empno, ename, job, sal, 
+             (select grade from salgrade
+              where e.sal between losal and hisal) as salgrade, deptno,
+              (select dname from dept d
+              where e.deptno = d.deptno) as dname
+from emp e;
+
+select ename, deptno, sal, (select trunc(avg(sal)) from emp
+                            where deptno = e.deptno) as "부서별 급여 평균"
+from emp e;
+
+
+select empno, ename, 
+            case when deptno = (select deptno from dept where loc = 'NEW YORK')
+                then '본사'
+                else '분점'
+            end as "소속"
+from emp
+order by 소속 desc;
+
+
+-- DECODE : 주어진 데이터 값이 조건 값과 일치하는 값을 출력하고
+-- 일치하지 않으면 기본값 출력
+select empno, ename, job, sal, 
+    decode(job,
+        'MANAGER', sal * 1.1,
+        'SALESMAN', sal * 1.05,
+        'ANALYST', sal,
+        sal * 1.03) as "급여인상"
+from emp;
+-- CASE문 : 
+select empno, ename, job, sal,
+    case job
+        when 'MANAGER' then sal * 1.1
+        when 'SALESMAN' then sal * 1.05
+        when 'ANALYST' then sal
+        else sal * 1.03
+    end as "급여 인상"
+from emp;
+
+
+-- 1. 전체 사원 중 ALLEN과 같은 직책(JOB)인 사원들의 사원 정보, 부서 정보 출력
+select e.job, e.empno, e.ename, e.sal, d.deptno, d.dname
+from emp e, dept d
+where e.deptno = d.deptno
+and job = (select job from emp where ename = 'ALLEN');
+
+
+
+-- 2. 전체 사원의 평균 급여(SAL)보다 높은 급여를 받는 사원들의 
+-- 사원 정보, 부서 정보, 급여 등급 정보를 출력하는 SQL문을 작성하세요
+-- (단 출력할 때 급여가 많은 순으로 정렬하되 급여가 같을 경우에는 
+-- 사원 번호를 기준으로 오름차순으로 정렬하세요).
+select e.empno, e.ename, d.dname, e.hiredate, d.loc, e.sal, s.grade
+from emp e, dept d, salgrade s
+where e.deptno = d.deptno
+    and e.sal between s.losal and s.hisal
+    and sal > (select avg(sal)
+                from emp)
+order by e.sal desc, e.empno;
+
+
+
+-- 3. 10번 부서에 근무하는 사원 중 30번 부서에는 존재하지 않는 직책을 가진 사원들의 
+-- 사원 정보, 부서 정보를 다음과 같이 출력하는 SQL문을 작성하세요
+select e.empno, e.ename, e.job, e.deptno, d.dname, d.loc
+from emp e, dept d
+where e.deptno = d.deptno
+and e.deptno = 10
+and job not in (select distinct job
+                from emp
+                where deptno = 30);
+
+
+-- 4. 직책이 SALESMAN인 사람들의 최고 급여보다 높은 급여를 받는 사원들의 
+-- 사원 정보, 급여 등급 정보를 다음과 같이 출력하는 SQL문을 작성하세요
+-- (단 서브쿼리를 활용할 때 다중행 함수를 사용하는 방법과 사용하지 않는 방법을 통해
+-- 사원 번호를 기준으로 오름차순으로 정렬하세요).
+
+
+
+-- DML(Data Manipulation Language) : 조회(select), 삭제(delete), 입력(insert), 변경(update)
+create table dept_temp
+as select * from dept;
+
+select * from dept_temp;
+
+insert into dept_temp(deptno, dname, loc) values(50, 'DATABASE', 'SEOUL');
+
+insert into dept_temp values(60, 'NETWORK', 'BUSAN');
+
+insert into dept_temp(deptno, loc) values(70, 'SUWON');
+
+insert into dept_temp values(80, 'mobile', '');
+
+create table emp_temp
+as select * from emp
+where 1 != 1;
+
+select * from emp_temp;
+
+INSERT INTO EMP_TEMP(EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, COMM, DEPTNO)
+        VALUES (9002, '안유진', 'MANAGER', 9999, SYSDATE, 5000, 800, 20);
+desc emp_temp;
+
+INSERT INTO EMP_TEMP(EMPNO, ENAME, JOB, MGR, HIREDATE, SAL, COMM, DEPTNO)
+        SELECT E.EMPNO, E.ENAME, E.JOB, E.MGR, E.HIREDATE, E.SAL, E.COMM, E.DEPTNO
+        FROM EMP E, SALGRADE S
+        WHERE E.SAL BETWEEN S.LOSAL AND S.HISAL
+            AND S.GRADE = 1;
+
+-- 테이블에 있는 데이터 수정하기
+select * from dept_temp2;
+
+update dept_temp2
+    set loc = 'SEOUL';
+
+
+update dept_temp2
+    set loc = '대전'
+where deptno = 40;
+
+delete from dept_temp2
+where loc = '대전';
+
+
+
+
+
+
+    
+rollback;
+
