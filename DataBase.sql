@@ -799,8 +799,192 @@ where loc = '대전';
 
 
 
+-- DDL(Data Definition Language) : 데이터베이스 데이터를 보관하고 관리하기 위해
+-- 관리하기 위해 제공되는 여러 객체의 생성, 변경, 삭제 관련 기능을 수행
+-- DDL은 commit, rollback이 없음
+create table emp_ddl (
+    empno number(4),
+    ename varchar2(10),  -- varchar2는 10자리 이하의 가변 크기를 할당
+    job varchar2(9),
+    mgr number(4),
+    hiredate date,
+    sal number(7, 2), -- 총 7자리의 숫자 중 소수점 이하가 2자리, 정수부 5자리
+    comm number(7, 2),
+    deptno number(2)
+);
+
+select * from emp_ddl;
+desc emp_ddl;
+
+-- 기존 테이블을 복사해서 새 테이블 만들기
+create table dept_ddl
+    as select * from dept;
+
+select * from dept_ddl
+
+create table emp_ddl_30
+    as select * from emp
+    where deptno = 30;
+
+select * from emp_ddl_30;
+
+
+-- 테이블을 변경하는 ALTER : 테이블에 새 열을 추가, 삭제하거나 열의 자료형 또는 길이 변경
+create table emp_alter
+    as select * from emp;
+select * from emp_alter;
+
+-- ALTER에 ADD : 컬럼을 추가
+alter table emp_alter
+    add hp varchar(20);
+
+select * from emp_alter; 
+
+-- ALTER에 RENAME : 열 이름을 변경
+alter table emp_alter
+    rename column hp to tel;
+
+-- ALTER에 MODIFY : 열의 자료형을 변경
+alter table emp_alter
+    modify empno number(2); -- 크기를 크게 하는건 가능(5), 작게하는 건 불가능(2)
+    
+alter table emp_alter
+    modify tel varchar(18); -- 데이터 값이 없었기 때문에 변경 가능, 데이터에 영향을 미치지 않을 경우
+
+-- ALTER에 DROP : 특정 열을 삭제 할 때
+alter table emp_alter
+    drop column comm;
+
+select * from emp_alter;
+
+-- 테이블 이름 변경 : RENAME
+rename emp_alter to emp_rename;
+
+select * from emp_rename;
+
+-- 테이블 데이터를 삭제하는 TRUNCATE
+truncate table emp_rename; -- ROLLBACK 불가능
+delete table emp_rename; -- ROLLBACK 가능
+
+-- 테이블을 삭제하는 DROP
+drop table emp_rename;
+
+
+create table table_notnull(
+    login_id varchar2(20) not null,
+    login_pwd varchar2(20) not null,
+    tel varchar(20)
+);
+
+insert into table_notnull values('JKS2024', 'SPHB8250', NULL);
+    
+select * from table_notnull;
+
+-- update는 DML이며 열의 데이터를 수정
+update table_notnull
+    set tel = '010-1234-1234'
+    where login_id = 'JKS2024';
+
+alter table table_notnull
+modify tel not null;
+
+desc table_notnull;
+
+-- 중복 값을 허용하지 않는 UNIQUE
+-- PRIMARY KEY : UNIQUE와 NOT NULL 제약조건 특성을 가짐
+create table table_unique (
+    login_id varchar2(20) primary key,
+    login_pwd varchar2(20) not null,
+    tel varchar2(20)
+);
+
+insert into table_unique values('안유진', 'ayj1234', '010-1234-1234');
+insert into table_unique values('장원영', 'jwy1234', '010-1234-5678');
+
+select * from table_unique;
+
+desc table_unique;
+
+delete from table_unique;
+
+drop table table_unique;
+
+
+-- 다른 테이블과 관계를 맺는 FOREIGN KEY(외래키)
+-- 외래키는 서로 다른 테이블과 관계를 정의하는데 사용하는 제약 조건
+-- 참조하고 있는 기본키의 데이터 타입과 일치해야 하며, 외래키에 참조되고 있는 기본키는 삭제 할 수 없음
+create table dept_fk(
+    deptno number(2) primary key,
+    dname varchar2(14),
+    loc varchar2(13)
+);
+
+drop table dept_fk;
+
+create table emp_fk(
+    empno number(4) primary key,
+    ename varchar2(10),
+    job varchar2(9),
+    mgr number(4),
+    hiredate date,
+    sal number(7,2),
+    comm number(7,2),
+    deptno number(2) references dept_fk(deptno)
+);
+insert into dept_fk values(10, '걸그룹', 'SEOUL');
+insert into dept_fk values(20, '걸그룹', 'SEOUL');
+insert into emp_fk values(9000, '안유진', '아이브', 8000, sysdate, 5000, 1000, 10);
+insert into emp_fk values(9001, '유나', '잇지', 7000, sysdate, 5000, 1000, 20);
+select * from emp_fk, dept_fk;
+select * from dept_fk;
+
+delete from dept_fk
+    where deptno = 20;
+
+delete from emp_fk
+    where deptno = 20;
+
+
+-- 데이터 사전 : 데이터베이스 메모리 성능, 사용자, 권한, 객체 등 
+-- 오라클 데이터베이스 운영에 필요한 중요한 데이터가 보관되어 있음
+select * from dict;
+
+-- 인덱스 : 데이터 검색 성능 향상을 위해 테이블 열에 사용하는 객체
+select * from user_indexes;
+create index idx_emp_sal on emp(sal);
+
+
+-- 테이블뷰 : 가상 테이블로 부르는 뷰는 하나 이상의 테이블을 조회하는 select문을 저장하는 객체
+-- 사용목적 : 필요한 테이블만 제공하거나 테이블의 특정 열을 숨기는 등의 보안 목적으로 사용 할 수 있음
+create view vw_emp20
+as (select empno, ename, job, deptno 
+    from emp
+    where deptno = 20);
+    
+-- 규칙에 따라 순번을 생성하는 시퀀스
+-- 시퀀스(Sequence) : 오라클 데이터베이스에서 특정 규칙에 맞는 연속 숫자를 생성하는 객체
+create table dept_sequence
+as (select * from dept where 1 <> 1);
+
+select * from dept_sequence;
+
+-- 시퀀스 테이블 만들기
+create sequence seq_dept_sequence
+increment by 10
+start with 10
+maxvalue 90
+minvalue 0
+nocycle
+cache 2;
+
+select * from user_sequences;
+
+insert into dept_sequence values(seq_dept_sequence.nextval, 'DATABASE', 'SEOUL');
+select * from dept_sequence;
+insert into dept_sequence values(seq_dept_sequence.nextval, 'REACT', 'SUWON');
+
+
 
 
     
-rollback;
 
